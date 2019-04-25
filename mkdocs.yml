@@ -1,0 +1,21 @@
+docs_dir: js-controller
+site_dir: workshop_site
+site_name: IoTesla Networks
+site_description: Frontend and control panel for IoTesla nodes
+site_author: CieNTi
+copyright: 2019 - CieNTi
+repo_url: https://github.com/CieNTi/arduino-IoTesla-client
+edit_uri: edit/master/js-controller/
+nav:
+  - Home: README.md
+  - A:
+    - A/README.md
+  - B:
+    - B/README.md
+markdown_extensions:
+  - smarty
+plugins:
+  - search
+  - awesome-pages:
+      collapse_single_pages: true
+theme: material

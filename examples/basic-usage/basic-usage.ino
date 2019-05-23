@@ -42,15 +42,18 @@ void loop()
   /* Test IoTesla Client */
   if (IoTesla.loop())
   {
-    Serial.printf("IoTesla Client loop not connected\n");
-    IoTesla.connect();
-  }
-  else
-  {
-    Serial.printf("IoTesla Client loop connected\n");
-    IoTesla.disconnect();
+    Serial.printf("IoTesla Client loop not connected. Connecting ...\n");
+    if (IoTesla.connect())
+    {
+      Serial.printf("Unable to connect. Retrying in 1 second ...\n");
+      delay(1000);
+    }
+    else
+    {
+      Serial.printf("Connected!\n");
+    }
   }
 
   /* Ensure not to flood with a huge amount of fast data */
-  delay(500);
+  delay(10);
 }

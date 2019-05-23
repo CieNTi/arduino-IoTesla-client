@@ -50,16 +50,22 @@ class IoTeslaClient
     /* Methods */
     /* Main setup and loop */
     uint8_t begin(void);
-    uint8_t loop();
-    uint8_t connect();
-    uint8_t connected();
-    uint8_t disconnect();
+    uint8_t loop(void);
+    uint8_t connect(void);
+    uint8_t connected(void);
+    uint8_t disconnect(void);
   private:
     /* Variables */
     uint8_t _connected = 0;
+    #if !defined(IOTESLA_WITHOUT_BME280)
+      BME280 BME280_obj;
+    #endif
+    //#if !defined(IOTESLA_WITHOUT_MPU6050)
+    //  MPU6050 MPU6050_obj;
+    //#endif
     /* Constructor */
     /* Methods */
-    void close();
+    void close(void);
 };
 
 #endif /* __IOTESLA_CLIENT_H */

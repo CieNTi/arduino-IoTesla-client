@@ -12,17 +12,17 @@ IoTeslaClient::IoTeslaClient(void)
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::begin()
+  * uint8_t IoTeslaClient::begin(void)
   */
-uint8_t IoTeslaClient::begin()
+uint8_t IoTeslaClient::begin(void)
 {
   return 0;
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::loop()
+  * uint8_t IoTeslaClient::loop(void)
   */
-uint8_t IoTeslaClient::loop()
+uint8_t IoTeslaClient::loop(void)
 {
   /* returns if not connected */
   if (!this->connected())
@@ -33,9 +33,9 @@ uint8_t IoTeslaClient::loop()
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::connect()
+  * uint8_t IoTeslaClient::connect(void)
   */
-uint8_t IoTeslaClient::connect()
+uint8_t IoTeslaClient::connect(void)
 {
   /* Close connection if connected */
   if (this->connected())
@@ -46,21 +46,21 @@ uint8_t IoTeslaClient::connect()
   /* Set flag */
   this->_connected = 1;
 
-  return 1;
+  return 0;
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::connected()
+  * uint8_t IoTeslaClient::connected(void)
   */
-uint8_t IoTeslaClient::connected()
+uint8_t IoTeslaClient::connected(void)
 {
   return this->_connected;
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::disconnect()
+  * uint8_t IoTeslaClient::disconnect(void)
   */
-uint8_t IoTeslaClient::disconnect()
+uint8_t IoTeslaClient::disconnect(void)
 {
   /* returns if not connected */
   if (!this->connected())
@@ -75,9 +75,9 @@ uint8_t IoTeslaClient::disconnect()
 }
 
 /** ~~~
-  * void IoTeslaClient::close()
+  * void IoTeslaClient::close(void)
   */
-void IoTeslaClient::close()
+void IoTeslaClient::close(void)
 {
   /* Set flag */
   this->_connected = 0;

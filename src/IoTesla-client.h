@@ -50,6 +50,12 @@
 /* Amount of data to keep saved on RAM */
 #define IOTESLA_SDATA_RAM_COUNT 1
 
+/* Amount of data to save on a single file */
+#define IOTESLA_DATA_PER_FILE 5000
+
+/* Max size for a command */
+#define IOTESLA_COMMAND_SIZE 16
+
 /* Sensor data structure */
 struct IoTesla_sensor_data
 {
@@ -86,7 +92,8 @@ class IoTeslaClient
     /* Data methods */
     int read_sensors(struct IoTesla_sensor_data *sdata);
     int save_data(struct IoTesla_sensor_data *sdata);
-
+    /* Control via console methods */
+    int read_console(void);
   private:
     /* Tracks connection status */
     int _connected = 0;
@@ -97,6 +104,16 @@ class IoTeslaClient
     size_t free_bytes;
     /* Holds sensor data (RAM) */
     struct IoTesla_sensor_data sdata[IOTESLA_SDATA_RAM_COUNT];
+    /* Available commands */
+    char *commands[] =
+    {
+      /* A-Z order or will miss the command */
+      "print",
+      "stop",
+      NULL
+    };
+    /* Holds latest command, valid or not */
+    char last_command[IOTESLA_COMMAND_SIZE];
     /* BME280 instance to work with */
     #if !defined(IOTESLA_WITHOUT_BME280)
       BME280 BME280_obj;

@@ -57,10 +57,6 @@ int IoTeslaClient::begin(void)
   }
   Serial.printf("- SPIFFS ... OK!\n");
   
-  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-  SPIFFS.remove(SENSOR_DATA_FILE); /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-
   /* Clean RAM data */
   for (int i = 0; i < IOTESLA_SDATA_RAM_COUNT; i++)
   {
@@ -218,16 +214,18 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
   free_bytes = spiffs_info.totalBytes - spiffs_info.usedBytes;
   if (free_bytes > sizeof(struct IoTesla_sensor_data))
   {
-    /* Yet free space */
-    Serial.printf("Writing data %016u ts: %lu ms, %u bytes (free: %u bytes)\n",
-                  sdata->data_id,
-                  sdata->timestamp,
-                  sizeof(struct IoTesla_sensor_data),
-                  free_bytes
-                  );
+    if (sdata->data_id % 100 == 0)
+    {
+      /* Yet free space */
+      Serial.printf("Writing data %016u ts: %lu ms, free: %lu bytes\n",
+                    sdata->data_id,
+                    sdata->timestamp,
+                    sizeof(struct IoTesla_sensor_data),
+                    free_bytes
+                    );
+    }
     sensor_data_file.write((const uint8_t *)sdata,
                            sizeof(struct IoTesla_sensor_data));
-    delay(1);
   }
   else
   {
@@ -241,6 +239,15 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
     delay(1000);
   }
 
+  return 0;
+}
+
+/** ~~~
+ * int IoTeslaClient::read_console(void)
+ */
+int IoTeslaClient::read_console(void)
+{
+  /* All ok */
   return 0;
 }
 
@@ -269,27 +276,11 @@ int IoTeslaClient::loop(void)
     /* Read data */
     read_sensors(&sdata[0]);
 
-    /* Clear screen */
-    Serial.printf("\033[2J\033[H");
-
-    /* Do! */
-    Serial.printf("%2.2f [V] %2.2f [C] %2.2f [%%] %2.2f [Pa] %2.2f [m]\n"
-                  "%i [gx] %i [gy] %i [gz] %i [dx] %i [dy] %i [dz]\n",
-                  sdata[0].supply_vcc,
-                  sdata[0].temperature,
-                  sdata[0].humidity,
-                  sdata[0].pressure,
-                  sdata[0].altitude,
-                  sdata[0].accelerometer_x,
-                  sdata[0].accelerometer_y,
-                  sdata[0].accelerometer_z,
-                  sdata[0].gyroscope_x,
-                  sdata[0].gyroscope_y,
-                  sdata[0].gyroscope_z
-                  );
-
     /* Save data */
     save_data(&sdata[0]);
+
+    /* See if there is console commands to process */
+    read_console();
   }
 
   /* All ok */

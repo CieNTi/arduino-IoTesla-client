@@ -8,6 +8,10 @@
   "build_systems":
   [
     {
+      "name": "Build & Run basic-usage (/dev/ttyUSB0)",
+      "shell_cmd": "cd $project_path/examples && ./compile-and-flash.sh basic-usage /dev/ttyUSB0"
+    },
+    {
       "name": "Build & Run current Arduino example sketch (/dev/ttyUSB0)",
       "shell_cmd": "cd $project_path/examples && ./compile-and-flash.sh $file_base_name /dev/ttyUSB0"
     },

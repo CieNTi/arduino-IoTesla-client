@@ -2,7 +2,7 @@
 
 This library is created for the C and Arduino Workshop for Euroavia Sevilla, to ease the development process, integration and usage of sensors, MQTT broker and frontend, using ESP8266 WiFi.
 
-This library will need the following libraries to be installed prior to use it:
+It will need the following libraries to be installed prior to use it:
 
 - D1 Mini board
     + Board support: [ESP8266 Arduino](https://github.com/esp8266/Arduino)
@@ -82,15 +82,19 @@ void loop()
 }
 ```
 
-## MQTT broker access and topics convention
+## MQTT broker access and topics 
 
 ## Node Information API
+
+| Topic          | Description                 | Type     | Data          | Example                  |
+| :----------    | :--------------------       | :-----:  | :-----:       | :-----                   |
+| `dev/CID/temp` | Temperature using client ID | `string` | `float`       | "23.4"                   |
+| `dev/DID/byte` | Bytes using device ID       | `bytes`  | `uint8_t x 4` | [0x01, 0x02, 0x03, 0x04] |
+| `dev/UID/json` | JSON using username         | `string` | `JSON`        | "{ a: 23.4 }"            |
 
 ## Sensor API
 
 ## Last words
-
-Enjoy!
 
 ```
             ======
@@ -134,4 +138,6 @@ Enjoy!
                                                             \/        
 ```
 
- :Credits: https://pastebin.com/8xNsnAhQ
+Enjoy!
+
+[ASCIIArt Credits](https://pastebin.com/8xNsnAhQ)

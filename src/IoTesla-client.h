@@ -16,11 +16,13 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+#include <FS.h>
 
 /* BME280: Temperature, Pressure and Humidity sensor */
 #if !defined(IOTESLA_WITHOUT_BME280)
   #include <Wire.h>
   #include <SparkFunBME280.h>
+  #define IOTESLA_BME280_ADDRESS 0x76
 #endif
 
 /* MPU6050: Accelerometer and Gyroscope sensor */
@@ -28,6 +30,12 @@
   #include <Wire.h>
   #include <I2Cdev.h>
   #include <MPU6050.h>
+  #define IOTESLA_MPU6050_ADDRESS 0x68
+#endif
+
+/* Common to both sensors */
+#if (!defined(IOTESLA_WITHOUT_BME280) || !defined(IOTESLA_WITHOUT_MPU6050))
+  #define IOTESLA_USE_WIRE_H
 #endif
 
 /* 'PubSub' vs 'MQTT' mqtt client library selection */
@@ -60,9 +68,9 @@ class IoTeslaClient
     #if !defined(IOTESLA_WITHOUT_BME280)
       BME280 BME280_obj;
     #endif
-    //#if !defined(IOTESLA_WITHOUT_MPU6050)
-    //  MPU6050 MPU6050_obj;
-    //#endif
+    #if !defined(IOTESLA_WITHOUT_MPU6050)
+      MPU6050 MPU6050_obj;
+    #endif
     /* Constructor */
     /* Methods */
     void close(void);

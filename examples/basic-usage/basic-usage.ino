@@ -42,7 +42,7 @@ void loop()
   /* Test IoTesla Client */
   if (IoTesla.loop())
   {
-    Serial.printf("IoTesla Client loop not connected. Connecting ...\n");
+    Serial.printf("IoTesla Client not connected. Connecting ...\n");
     if (IoTesla.connect())
     {
       Serial.printf("Unable to connect. Retrying in 1 second ...\n");

@@ -3,7 +3,7 @@
 /* This allows 'ESP.getVcc()' to be used */
 ADC_MODE(ADC_VCC);
 
-#define SENSOR_PERIOD_MS 10
+#define SENSOR_PERIOD_MS 5
 #define SENSOR_DATA_FILE "/sensor_data.bin"
 
 /** ~~~
@@ -57,10 +57,6 @@ int IoTeslaClient::begin(void)
   }
   Serial.printf("- SPIFFS ... OK!\n");
   
-  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-  SPIFFS.remove(SENSOR_DATA_FILE); /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
-
   /* Clean RAM data */
   for (int i = 0; i < IOTESLA_SDATA_RAM_COUNT; i++)
   {
@@ -218,16 +214,13 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
   free_bytes = spiffs_info.totalBytes - spiffs_info.usedBytes;
   if (free_bytes > sizeof(struct IoTesla_sensor_data))
   {
-    /* Yet free space */
-    Serial.printf("Writing data %016u ts: %lu ms, %u bytes (free: %u bytes)\n",
-                  sdata->data_id,
-                  sdata->timestamp,
-                  sizeof(struct IoTesla_sensor_data),
-                  free_bytes
-                  );
-    sensor_data_file.write((const uint8_t *)sdata,
-                           sizeof(struct IoTesla_sensor_data));
-    delay(1);
+    if (sensor_data_file.write((const uint8_t *)sdata,
+                               sizeof(struct IoTesla_sensor_data))
+        != sizeof(struct IoTesla_sensor_data))
+    {
+      Serial.printf("Amount of saved data mismatch, closing\n");
+      sensor_data_file.close();
+    }
   }
   else
   {
@@ -241,6 +234,112 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
     delay(1000);
   }
 
+  return 0;
+}
+
+/** ~~~
+ * int IoTeslaClient::read_console(void)
+ */
+int IoTeslaClient::read_console(void)
+{
+  static char rcv_char = 0x00;
+  if (Serial.available() > 0)
+  {
+    /* Get it */
+    rcv_char = Serial.read();
+
+    /* No \r, just \n */
+    if (rcv_char == '\r')
+    {
+      rcv_char = '\n';
+    }
+
+    /* Echo it */
+    Serial.printf("%c", rcv_char);
+
+    /* Ended? */
+    if (rcv_char == '\n')
+    {
+      /* Close the string */
+      last_command[last_command_size] = 0x00;
+
+      /* A command received? */
+      for (int i = 0; commands[i] != NULL; i++)
+      {
+        if (strcmp(last_command, commands[i]) == 0)
+        {
+          switch (i)
+          {
+            case IOTESLA_CMD_PRINT:
+              Serial.printf("IOTESLA_CMD_PRINT\n");
+              break;
+            case IOTESLA_CMD_DELETE:
+              Serial.printf("IOTESLA_CMD_DELETE\n");
+              break;
+            case IOTESLA_CMD_STATUS:
+              Serial.printf("%2.2f [V] "
+                            "%2.2f [C] %2.2f [%%] %2.2f [Pa] %2.2f [m]\n"
+                            "%i [gx] %i [gy] %i [gz] %i [dx] %i [dy] %i [dz]\n",
+                            sdata[0].supply_vcc,
+                            sdata[0].temperature,
+                            sdata[0].humidity,
+                            sdata[0].pressure,
+                            sdata[0].altitude,
+                            sdata[0].accelerometer_x,
+                            sdata[0].accelerometer_y,
+                            sdata[0].accelerometer_z,
+                            sdata[0].gyroscope_x,
+                            sdata[0].gyroscope_y,
+                            sdata[0].gyroscope_z
+                            );
+              Serial.printf("Latest data id %06u, %lu ms, free %u bytes\n",
+                            sdata[0].data_id,
+                            sdata[0].timestamp,
+                            free_bytes
+                            );
+              break;
+            default:
+              Serial.printf("How can you reached this place???\n");
+              break;
+          }
+          last_command_size = 0;
+        }
+      }
+      if (last_command_size > 0)
+      {
+        Serial.printf("Unknown command. One of");
+        for (int j = 0; commands[j] != NULL; j++)
+        {
+          Serial.printf("%c %s",(j == 0)?':':',' , commands[j]);
+        }
+        Serial.printf(".\n");
+        last_command_size = 0;
+      }
+    }
+    else
+    {
+      if (last_command_size < IOTESLA_COMMAND_SIZE - 1)
+      {
+        /* Add to buffer */
+        last_command[last_command_size++] = rcv_char;
+      }
+      else
+      {
+        /* Invalid command */
+        Serial.printf("TOO LARGE: Clearing command buffer. Max %u chars",
+                      IOTESLA_COMMAND_SIZE - 1);
+        last_command_size = 0;
+      }
+    }
+
+    /* Clean input buffer */
+    while (Serial.available() > 0)
+    {
+      Serial.read();
+    }
+  }
+
+  /* All ok */
   return 0;
 }
 
@@ -269,27 +368,11 @@ int IoTeslaClient::loop(void)
     /* Read data */
     read_sensors(&sdata[0]);
 
-    /* Clear screen */
-    Serial.printf("\033[2J\033[H");
-
-    /* Do! */
-    Serial.printf("%2.2f [V] %2.2f [C] %2.2f [%%] %2.2f [Pa] %2.2f [m]\n"
-                  "%i [gx] %i [gy] %i [gz] %i [dx] %i [dy] %i [dz]\n",
-                  sdata[0].supply_vcc,
-                  sdata[0].temperature,
-                  sdata[0].humidity,
-                  sdata[0].pressure,
-                  sdata[0].altitude,
-                  sdata[0].accelerometer_x,
-                  sdata[0].accelerometer_y,
-                  sdata[0].accelerometer_z,
-                  sdata[0].gyroscope_x,
-                  sdata[0].gyroscope_y,
-                  sdata[0].gyroscope_z
-                  );
-
     /* Save data */
     save_data(&sdata[0]);
+
+    /* See if there is console commands to process */
+    read_console();
   }
 
   /* All ok */

@@ -55,7 +55,4 @@ void loop()
       Serial.printf("Connected!\n");
     }
   }
-
-  /* Ensure not to flood with a huge amount of fast data */
-  delay(1);
 }

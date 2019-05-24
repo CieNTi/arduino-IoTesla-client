@@ -61,7 +61,7 @@ struct IoTesla_sensor_data
 {
   /* System related */
   unsigned long timestamp;
-  unsigned long data_id;
+  unsigned int data_id;
   float supply_vcc;
   /* BME280 related*/
   float temperature;
@@ -94,6 +94,7 @@ class IoTeslaClient
     int save_data(struct IoTesla_sensor_data *sdata);
     /* Control via console methods */
     int read_console(void);
+
   private:
     /* Tracks connection status */
     int _connected = 0;
@@ -105,15 +106,20 @@ class IoTeslaClient
     /* Holds sensor data (RAM) */
     struct IoTesla_sensor_data sdata[IOTESLA_SDATA_RAM_COUNT];
     /* Available commands */
-    char *commands[] =
+    char *commands[4] =
     {
-      /* A-Z order or will miss the command */
+      #define IOTESLA_CMD_PRINT 0
       "print",
-      "stop",
+      #define IOTESLA_CMD_DELETE 1
+      "delete",
+      #define IOTESLA_CMD_STATUS 2
+      "status",
       NULL
     };
     /* Holds latest command, valid or not */
-    char last_command[IOTESLA_COMMAND_SIZE];
+    char last_command[IOTESLA_COMMAND_SIZE] = { 0x00 };
+    /* Chars read so far inside last_command */
+    int last_command_size = 0;
     /* BME280 instance to work with */
     #if !defined(IOTESLA_WITHOUT_BME280)
       BME280 BME280_obj;

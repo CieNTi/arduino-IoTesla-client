@@ -20,8 +20,10 @@ void setup()
   Serial.begin(115200);
 
   /* Welcome message! Useful as a control point */
-  Serial.printf("Ahoy! ESP8266 here!\n"
-                "---\n"
+  Serial.printf("\n\n\n"
+                " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"
+                "| Starting IoTesla Client node ... let the fun begin! |\n"
+                " ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n"
                 );
 
   /* Check communication before continue */
@@ -55,5 +57,5 @@ void loop()
   }
 
   /* Ensure not to flood with a huge amount of fast data */
-  delay(10);
+  delay(1);
 }

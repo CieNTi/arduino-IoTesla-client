@@ -47,31 +47,46 @@
   #include <MQTT.h>
 #endif
 
+/* Sensor data structure */
+struct IoTesla_sensor_data
+{
+  /* System related */
+  float supply_vcc;
+  /* BME280 related*/
+  float temperature;
+  float humidity;
+  float pressure;
+  float altitude;
+};
+
 /* IoTesla Client Class */
 class IoTeslaClient
 {
   public:
-    /* Variables */
     /* Constructor */
     IoTeslaClient(void);
+    /* Basic methods */
+    int begin(void);
+    int loop(void);
+    int connect(void);
+    int connected(void);
+    int disconnect(void);
+    /* Sensor methods */
+    int read_sensors(struct IoTesla_sensor_data *sdata);
 
-    /* Methods */
-    /* Main setup and loop */
-    uint8_t begin(void);
-    uint8_t loop(void);
-    uint8_t connect(void);
-    uint8_t connected(void);
-    uint8_t disconnect(void);
   private:
-    /* Variables */
-    uint8_t _connected = 0;
+    /* Tracks connection status */
+    int _connected = 0;
+    /* Holds sensor data */
+    struct IoTesla_sensor_data sdata[8];
+    /* BME280 instance to work with */
     #if !defined(IOTESLA_WITHOUT_BME280)
       BME280 BME280_obj;
     #endif
+    /* MPU6050 instance to work with */
     #if !defined(IOTESLA_WITHOUT_MPU6050)
       MPU6050 MPU6050_obj;
     #endif
-    /* Constructor */
     /* Methods */
     void close(void);
 };

@@ -247,10 +247,18 @@ int IoTeslaClient::read_console(void)
   {
     /* Get it */
     rcv_char = Serial.read();
+
+    /* No \r, just \n */
+    if (rcv_char == '\r')
+    {
+      rcv_char = '\n';
+    }
+
     /* Echo it */
     Serial.printf("%c", rcv_char);
+
     /* Ended? */
-    if (rcv_char == '\n' || rcv_char == '\r')
+    if (rcv_char == '\n')
     {
       /* Close the string */
       last_command[last_command_size] = 0x00;
@@ -299,7 +307,13 @@ int IoTeslaClient::read_console(void)
       }
       if (last_command_size > 0)
       {
-        Serial.printf("Unknown command\n");
+        Serial.printf("Unknown command. One of");
+        for (int j = 0; commands[j] != NULL; j++)
+        {
+          Serial.printf("%c %s",(j == 0)?':':',' , commands[j]);
+        }
+        Serial.printf(".\n");
+        last_command_size = 0;
       }
     }
     else

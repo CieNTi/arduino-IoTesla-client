@@ -3,6 +3,8 @@
 /* This allows 'ESP.getVcc()' to be used */
 ADC_MODE(ADC_VCC);
 
+#define SENSOR_PERIOD_MS 50
+
 /** ~~~
   * IoTeslaClient::IoTeslaClient(void)
   */
@@ -12,9 +14,9 @@ IoTeslaClient::IoTeslaClient(void)
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::begin(void)
+  * int IoTeslaClient::begin(void)
   */
-uint8_t IoTeslaClient::begin(void)
+int IoTeslaClient::begin(void)
 {
   Serial.printf("Configuring IoTesla Client\n");
 
@@ -70,15 +72,15 @@ uint8_t IoTeslaClient::begin(void)
     Serial.printf("- BME280 ... OK!\n");
 
     /* Filter coefficient.          | 0 to 4 is valid.   | See 3.4.4     */
-    BME280_obj.setFilter(2);
+    BME280_obj.setFilter(4);
     /* Time between readings.       | 0 to 7 valid.      | See table 27. */
-    BME280_obj.setStandbyTime(1);
+    BME280_obj.setStandbyTime(0);
     /* 0 disables temp sensing.     | 0 to 16 are valid. | See table 24. */
-    BME280_obj.setTempOverSample(8);
+    BME280_obj.setTempOverSample(5);
     /* 0 disables pressure sensing. | 0 to 16 are valid. | See table 23. */
-    BME280_obj.setPressureOverSample(8);
+    BME280_obj.setPressureOverSample(5);
     /* 0 disables humidity sensing. | 0 to 16 are valid. | See table 19. */
-    BME280_obj.setHumidityOverSample(8);
+    BME280_obj.setHumidityOverSample(5);
     /* MODE_SLEEP, MODE_FORCED, MODE_NORMAL is valid.    | See 3.3       */
     BME280_obj.setMode(MODE_NORMAL);
   #endif
@@ -105,22 +107,72 @@ uint8_t IoTeslaClient::begin(void)
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::loop(void)
-  */
-uint8_t IoTeslaClient::loop(void)
+ * int
+ */
+int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
 {
+  /*
+   * System Section
+   */
+  sdata->supply_vcc  = 0.001 * ESP.getVcc();
+
+  /* 
+   * BME280 Section
+   * Is configured to an standby of 0.5ms only, with lot of HW FIR filters
+   * so it is supposed to give a coherent stable measurement ... let check it
+   */
+  sdata->temperature = BME280_obj.readTempC();
+  sdata->humidity    = BME280_obj.readFloatHumidity();
+  sdata->pressure    = BME280_obj.readFloatPressure();
+  sdata->altitude    = BME280_obj.readFloatAltitudeMeters();
+
+  /* Go without errors */
+  return 0;
+}
+
+/** ~~~
+  * int IoTeslaClient::loop(void)
+  */
+int IoTeslaClient::loop(void)
+{
+  /* Used to count the time */
+  static unsigned long millis_now = 0;
+  static unsigned long millis_last = 0;
+
   /* returns if not connected */
   if (!this->connected())
   {
     return 1;
   }
+
+  /* Delayed execution without locking the CPU */
+  millis_now = millis();
+  if (millis_now - millis_last > SENSOR_PERIOD_MS)
+  {
+    /* Refresh timer */
+    millis_last = millis_now;
+
+    /* Read data */
+    read_sensors(&sdata[0]);
+
+    /* Do! */
+    Serial.printf(" - VCC..: %2.2f [V]\n",  sdata[0].supply_vcc);
+    Serial.printf(" - Temp.: %2.2f [C]\n",  sdata[0].temperature);
+    Serial.printf(" - Hum..: %2.2f [%%]\n", sdata[0].humidity);
+    Serial.printf(" - Pres.: %2.2f [Pa]\n", sdata[0].pressure);
+    Serial.printf(" - Alt..: %2.2f [m]\n",  sdata[0].altitude);
+
+    Serial.printf("\n");
+  }
+
+  /* All ok */
   return 0;
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::connect(void)
+  * int IoTeslaClient::connect(void)
   */
-uint8_t IoTeslaClient::connect(void)
+int IoTeslaClient::connect(void)
 {
   /* Close connection if connected */
   if (this->connected())
@@ -135,17 +187,17 @@ uint8_t IoTeslaClient::connect(void)
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::connected(void)
+  * int IoTeslaClient::connected(void)
   */
-uint8_t IoTeslaClient::connected(void)
+int IoTeslaClient::connected(void)
 {
   return this->_connected;
 }
 
 /** ~~~
-  * uint8_t IoTeslaClient::disconnect(void)
+  * int IoTeslaClient::disconnect(void)
   */
-uint8_t IoTeslaClient::disconnect(void)
+int IoTeslaClient::disconnect(void)
 {
   /* returns if not connected */
   if (!this->connected())

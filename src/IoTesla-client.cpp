@@ -100,6 +100,28 @@ int IoTeslaClient::begin(void)
       /* Stop here (WDT will reset at some point) */
       while(1);
     }
+
+    /* By default, the library uses the following settings:
+     * - setFullScaleGyroRange(MPU6050_GYRO_FS_250)
+     * - setFullScaleAccelRange(MPU6050_ACCEL_FS_2)
+     */
+
+    /* Configure Accelerometer range, choose from:
+     * - MPU6050_ACCEL_FS_2 ...: +/-2g
+     * - MPU6050_ACCEL_FS_4 ...: +/-4g
+     * - MPU6050_ACCEL_FS_8 ...: +/-8g
+     * - MPU6050_ACCEL_FS_16 ..: +/-16g
+     */
+    MPU6050_obj.setFullScaleAccelRange(MPU6050_ACCEL_FS_16);
+
+    /* Configure Gyroscope range, choose from:
+     * - MPU6050_GYRO_FS_250 ..: +/-250 deg/sec
+     * - MPU6050_GYRO_FS_500 ..: +/-500 deg/sec
+     * - MPU6050_GYRO_FS_1000 .: +/-1000 deg/sec
+     * - MPU6050_GYRO_FS_2000 .: +/-2000 deg/sec
+     */
+    MPU6050_obj.setFullScaleGyroRange(MPU6050_GYRO_FS_2000);
+
     Serial.printf("- MPU6050 ... OK!\n");
   #endif
 
@@ -121,10 +143,21 @@ int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
    * Is configured to an standby of 0.5ms only, with lot of HW FIR filters
    * so it is supposed to give a coherent stable measurement ... let check it
    */
-  sdata->temperature = BME280_obj.readTempC();
-  sdata->humidity    = BME280_obj.readFloatHumidity();
-  sdata->pressure    = BME280_obj.readFloatPressure();
-  sdata->altitude    = BME280_obj.readFloatAltitudeMeters();
+  sdata->temperature      = BME280_obj.readTempC();
+  sdata->humidity         = BME280_obj.readFloatHumidity();
+  sdata->pressure         = BME280_obj.readFloatPressure();
+  sdata->altitude         = BME280_obj.readFloatAltitudeMeters();
+
+  /* 
+   * MPU6050 Section
+   */
+  MPU6050_obj.getMotion6(&sdata->accelerometer_x,
+                         &sdata->accelerometer_y,
+                         &sdata->accelerometer_z,
+                         &sdata->gyroscope_x,
+                         &sdata->gyroscope_y,
+                         &sdata->gyroscope_z
+  );
 
   /* Go without errors */
   return 0;
@@ -155,14 +188,21 @@ int IoTeslaClient::loop(void)
     /* Read data */
     read_sensors(&sdata[0]);
 
+    /* Clear screen */
+    Serial.printf("\033[2J\033[H");
+
     /* Do! */
     Serial.printf(" - VCC..: %2.2f [V]\n",  sdata[0].supply_vcc);
     Serial.printf(" - Temp.: %2.2f [C]\n",  sdata[0].temperature);
     Serial.printf(" - Hum..: %2.2f [%%]\n", sdata[0].humidity);
     Serial.printf(" - Pres.: %2.2f [Pa]\n", sdata[0].pressure);
     Serial.printf(" - Alt..: %2.2f [m]\n",  sdata[0].altitude);
-
-    Serial.printf("\n");
+    Serial.printf(" - A_X..: %i [g]\n",     sdata[0].accelerometer_x);
+    Serial.printf(" - A_Y..: %i [g]\n",     sdata[0].accelerometer_y);
+    Serial.printf(" - A_Z..: %i [g]\n",     sdata[0].accelerometer_z);
+    Serial.printf(" - G_X..: %i [deg]\n",   sdata[0].gyroscope_x);
+    Serial.printf(" - G_Y..: %i [deg]\n",   sdata[0].gyroscope_y);
+    Serial.printf(" - G_Z..: %i [deg]\n",   sdata[0].gyroscope_z);
   }
 
   /* All ok */

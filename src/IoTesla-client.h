@@ -57,6 +57,13 @@ struct IoTesla_sensor_data
   float humidity;
   float pressure;
   float altitude;
+  /* MPU6050 related */
+  int16_t accelerometer_x;
+  int16_t accelerometer_y;
+  int16_t accelerometer_z;
+  int16_t gyroscope_x;
+  int16_t gyroscope_y;
+  int16_t gyroscope_z;
 };
 
 /* IoTesla Client Class */

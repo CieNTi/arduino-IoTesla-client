@@ -47,10 +47,15 @@
   #include <MQTT.h>
 #endif
 
+/* Amount of data to keep saved on RAM */
+#define IOTESLA_SDATA_RAM_COUNT 1
+
 /* Sensor data structure */
 struct IoTesla_sensor_data
 {
   /* System related */
+  unsigned long timestamp;
+  unsigned long data_id;
   float supply_vcc;
   /* BME280 related*/
   float temperature;
@@ -78,14 +83,20 @@ class IoTeslaClient
     int connect(void);
     int connected(void);
     int disconnect(void);
-    /* Sensor methods */
+    /* Data methods */
     int read_sensors(struct IoTesla_sensor_data *sdata);
+    int save_data(struct IoTesla_sensor_data *sdata);
 
   private:
     /* Tracks connection status */
     int _connected = 0;
-    /* Holds sensor data */
-    struct IoTesla_sensor_data sdata[8];
+    /* Holds File for saving data */
+    File sensor_data_file;
+    /* To check if more data can be saved */
+    struct FSInfo spiffs_info;
+    size_t free_bytes;
+    /* Holds sensor data (RAM) */
+    struct IoTesla_sensor_data sdata[IOTESLA_SDATA_RAM_COUNT];
     /* BME280 instance to work with */
     #if !defined(IOTESLA_WITHOUT_BME280)
       BME280 BME280_obj;

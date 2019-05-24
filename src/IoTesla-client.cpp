@@ -3,7 +3,8 @@
 /* This allows 'ESP.getVcc()' to be used */
 ADC_MODE(ADC_VCC);
 
-#define SENSOR_PERIOD_MS 50
+#define SENSOR_PERIOD_MS 10
+#define SENSOR_DATA_FILE "/sensor_data.bin"
 
 /** ~~~
   * IoTeslaClient::IoTeslaClient(void)
@@ -18,6 +19,17 @@ IoTeslaClient::IoTeslaClient(void)
   */
 int IoTeslaClient::begin(void)
 {
+  Serial.printf("Starting in 10 .. ");
+  delay(2000);
+  Serial.printf("8 .. ");
+  delay(2000);
+  Serial.printf("6 .. ");
+  delay(2000);
+  Serial.printf("4 .. ");
+  delay(2000);
+  Serial.printf("2 ..\n");
+  delay(2000);
+
   Serial.printf("Configuring IoTesla Client\n");
 
   /* Initialize the file system */
@@ -44,6 +56,16 @@ int IoTeslaClient::begin(void)
     while(1) {};
   }
   Serial.printf("- SPIFFS ... OK!\n");
+  
+  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
+  SPIFFS.remove(SENSOR_DATA_FILE); /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
+  /* DO NOT INCLUDE THIS ON FINAL VERSION ! */
+
+  /* Clean RAM data */
+  for (int i = 0; i < IOTESLA_SDATA_RAM_COUNT; i++)
+  {
+    memset(&sdata[i], 0x00, sizeof(struct IoTesla_sensor_data));
+  }
 
   /* Join I2C bus and set it to 400 kHz */
   #if defined(IOTESLA_USE_WIRE_H)
@@ -129,13 +151,15 @@ int IoTeslaClient::begin(void)
 }
 
 /** ~~~
- * int
+ * int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
  */
 int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
 {
   /*
    * System Section
    */
+  sdata->data_id++;
+  sdata->timestamp = millis();
   sdata->supply_vcc  = 0.001 * ESP.getVcc();
 
   /* 
@@ -160,6 +184,63 @@ int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
   );
 
   /* Go without errors */
+  return 0;
+}
+
+/** ~~~
+ * int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
+ */
+int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
+{
+  if (!sensor_data_file)
+  {
+    /* File still not opened? Try to open */
+
+    /* Mode 'a+' create if not exists:
+     *  - Read from the beginning of the file
+     *  - Append new data at the end
+     *  * Useful for buffers ;)
+     */
+    sensor_data_file = SPIFFS.open(SENSOR_DATA_FILE, "a+");
+    if (!sensor_data_file)
+    {
+      /* Oh man, this is serious */
+      Serial.printf("Cannot open '" SENSOR_DATA_FILE "'. Locking now'\n");
+
+      /* Stop here (WDT will reset at some point) */
+      while(1);
+    }
+    Serial.printf("Opened '" SENSOR_DATA_FILE "'\n");
+  }
+
+  /* Opened, now put some (at the end of the file) */
+  SPIFFS.info(spiffs_info);
+  free_bytes = spiffs_info.totalBytes - spiffs_info.usedBytes;
+  if (free_bytes > sizeof(struct IoTesla_sensor_data))
+  {
+    /* Yet free space */
+    Serial.printf("Writing data %016u ts: %lu ms, %u bytes (free: %u bytes)\n",
+                  sdata->data_id,
+                  sdata->timestamp,
+                  sizeof(struct IoTesla_sensor_data),
+                  free_bytes
+                  );
+    sensor_data_file.write((const uint8_t *)sdata,
+                           sizeof(struct IoTesla_sensor_data));
+    delay(1);
+  }
+  else
+  {
+    /* Memory is full */
+    Serial.printf("Memory is full\n");
+    if (sensor_data_file)
+    {
+      sensor_data_file.close();
+      Serial.printf("Closed '" SENSOR_DATA_FILE "'\n");
+    }
+    delay(1000);
+  }
+
   return 0;
 }
 
@@ -192,17 +273,23 @@ int IoTeslaClient::loop(void)
     Serial.printf("\033[2J\033[H");
 
     /* Do! */
-    Serial.printf(" - VCC..: %2.2f [V]\n",  sdata[0].supply_vcc);
-    Serial.printf(" - Temp.: %2.2f [C]\n",  sdata[0].temperature);
-    Serial.printf(" - Hum..: %2.2f [%%]\n", sdata[0].humidity);
-    Serial.printf(" - Pres.: %2.2f [Pa]\n", sdata[0].pressure);
-    Serial.printf(" - Alt..: %2.2f [m]\n",  sdata[0].altitude);
-    Serial.printf(" - A_X..: %i [g]\n",     sdata[0].accelerometer_x);
-    Serial.printf(" - A_Y..: %i [g]\n",     sdata[0].accelerometer_y);
-    Serial.printf(" - A_Z..: %i [g]\n",     sdata[0].accelerometer_z);
-    Serial.printf(" - G_X..: %i [deg]\n",   sdata[0].gyroscope_x);
-    Serial.printf(" - G_Y..: %i [deg]\n",   sdata[0].gyroscope_y);
-    Serial.printf(" - G_Z..: %i [deg]\n",   sdata[0].gyroscope_z);
+    Serial.printf("%2.2f [V] %2.2f [C] %2.2f [%%] %2.2f [Pa] %2.2f [m]\n"
+                  "%i [gx] %i [gy] %i [gz] %i [dx] %i [dy] %i [dz]\n",
+                  sdata[0].supply_vcc,
+                  sdata[0].temperature,
+                  sdata[0].humidity,
+                  sdata[0].pressure,
+                  sdata[0].altitude,
+                  sdata[0].accelerometer_x,
+                  sdata[0].accelerometer_y,
+                  sdata[0].accelerometer_z,
+                  sdata[0].gyroscope_x,
+                  sdata[0].gyroscope_y,
+                  sdata[0].gyroscope_z
+                  );
+
+    /* Save data */
+    save_data(&sdata[0]);
   }
 
   /* All ok */

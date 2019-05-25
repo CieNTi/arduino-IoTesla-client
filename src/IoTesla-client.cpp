@@ -3,7 +3,7 @@
 /* This allows 'ESP.getVcc()' to be used */
 ADC_MODE(ADC_VCC);
 
-#define SENSOR_PERIOD_MS 5
+#define SENSOR_PERIOD_MS 10
 #define SENSOR_DATA_FILE "/sensor_data.bin"
 
 /** ~~~
@@ -26,6 +26,7 @@ int IoTeslaClient::begin(void)
   Serial.printf("2 ..\n");             delay(2000);
 
   Serial.printf("Configuring IoTesla Client\n");
+  memory_full = 0;
 
   /* Initialize the file system */
   Serial.printf("- Initializing SPIFFS\n");
@@ -183,6 +184,11 @@ int IoTeslaClient::read_sensors(struct IoTesla_sensor_data *sdata)
  */
 int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
 {
+  if (memory_full == 1)
+  {
+    return 0;
+  }
+
   if (!sensor_data_file)
   {
     /* File still not opened? Try to open */
@@ -213,20 +219,16 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
                                sizeof(struct IoTesla_sensor_data))
         != sizeof(struct IoTesla_sensor_data))
     {
-      Serial.printf("Amount of saved data mismatch, closing\n");
-      sensor_data_file.close();
+      /* Memory is full */
+      Serial.printf("Memory is full (size mismatch)\n");
+      memory_full = 1;
     }
   }
   else
   {
     /* Memory is full */
-    Serial.printf("Memory is full\n");
-    if (sensor_data_file)
-    {
-      sensor_data_file.close();
-      Serial.printf("Closed '" SENSOR_DATA_FILE "'\n");
-    }
-    delay(1000);
+    Serial.printf("Memory is full (super full)\n");
+    memory_full = 1;
   }
 
   return 0;
@@ -312,6 +314,7 @@ int IoTeslaClient::read_console(void)
               sensor_data_file = SPIFFS.open(SENSOR_DATA_FILE, "a+");
               break;
             case IOTESLA_CMD_DELETE:
+              sensor_data_file.close();
               Serial.printf("Deleting in 10 .. "); delay(2000);
               Serial.printf("8 .. ");              delay(2000);
               Serial.printf("6 .. ");              delay(2000);
@@ -320,6 +323,7 @@ int IoTeslaClient::read_console(void)
               Serial.printf("Deleting file ...\n");
               SPIFFS.remove(SENSOR_DATA_FILE);
               Serial.printf("Deleted! Bye bye data!\n");
+              memory_full = 0;
               break;
             case IOTESLA_CMD_STATUS:
               Serial.printf("%2.2f [V] "

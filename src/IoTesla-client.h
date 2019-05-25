@@ -103,6 +103,8 @@ class IoTeslaClient
     /* To check if more data can be saved */
     struct FSInfo spiffs_info;
     size_t free_bytes;
+    /* Tracks memory status */
+    int memory_full = 0;
     /* Holds sensor data (RAM) */
     struct IoTesla_sensor_data sdata[IOTESLA_SDATA_RAM_COUNT];
     /* Available commands */

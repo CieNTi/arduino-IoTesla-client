@@ -48,7 +48,7 @@
 #endif
 
 /* Amount of data to keep saved on RAM */
-#define IOTESLA_SDATA_RAM_COUNT 1
+#define IOTESLA_SDATA_RAM_COUNT 2
 
 /* Amount of data to save on a single file */
 #define IOTESLA_DATA_PER_FILE 5000
@@ -108,7 +108,7 @@ class IoTeslaClient
     /* Available commands */
     char *commands[4] =
     {
-      #define IOTESLA_CMD_PRINT 0
+      #define IOTESLA_CMD_PRINT  0
       "print",
       #define IOTESLA_CMD_DELETE 1
       "delete",

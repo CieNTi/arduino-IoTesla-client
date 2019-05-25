@@ -19,16 +19,11 @@ IoTeslaClient::IoTeslaClient(void)
   */
 int IoTeslaClient::begin(void)
 {
-  Serial.printf("Starting in 10 .. ");
-  delay(2000);
-  Serial.printf("8 .. ");
-  delay(2000);
-  Serial.printf("6 .. ");
-  delay(2000);
-  Serial.printf("4 .. ");
-  delay(2000);
-  Serial.printf("2 ..\n");
-  delay(2000);
+  Serial.printf("Starting in 10 .. "); delay(2000);
+  Serial.printf("8 .. ");              delay(2000);
+  Serial.printf("6 .. ");              delay(2000);
+  Serial.printf("4 .. ");              delay(2000);
+  Serial.printf("2 ..\n");             delay(2000);
 
   Serial.printf("Configuring IoTesla Client\n");
 
@@ -56,7 +51,7 @@ int IoTeslaClient::begin(void)
     while(1) {};
   }
   Serial.printf("- SPIFFS ... OK!\n");
-  
+
   /* Clean RAM data */
   for (int i = 0; i < IOTESLA_SDATA_RAM_COUNT; i++)
   {
@@ -243,7 +238,7 @@ int IoTeslaClient::save_data(struct IoTesla_sensor_data *sdata)
 int IoTeslaClient::read_console(void)
 {
   static char rcv_char = 0x00;
-  if (Serial.available() > 0)
+  while (Serial.available() > 0)
   {
     /* Get it */
     rcv_char = Serial.read();
@@ -271,10 +266,60 @@ int IoTeslaClient::read_console(void)
           switch (i)
           {
             case IOTESLA_CMD_PRINT:
-              Serial.printf("IOTESLA_CMD_PRINT\n");
+              /* Mode 'r' create if not exists:
+               *  - Read from the beginning of the file
+               *  - Fails if file not exists
+               *  * Useful for safe readings without data modification
+               */
+              sensor_data_file.close();
+              sensor_data_file = SPIFFS.open(SENSOR_DATA_FILE, "r");
+              Serial.printf("timestamp"
+                            ";data_id"
+                            ";supply_vcc"
+                            ";temperature"
+                            ";humidity"
+                            ";pressure"
+                            ";altitude"
+                            ";accelerometer_x"
+                            ";accelerometer_y"
+                            ";accelerometer_z"
+                            ";gyroscope_x"
+                            ";gyroscope_y"
+                            ";gyroscope_z\n");
+              while (sensor_data_file.position() < sensor_data_file.size())
+              {
+                sensor_data_file.read((uint8_t *)&sdata[1],
+                                      sizeof(struct IoTesla_sensor_data));
+                Serial.printf("%lu;%u;"
+                              "%2.4f;%2.4f;%2.4f;%2.4f;%2.4f;"
+                              "%i;%i;%i;%i;%i;%i\n",
+                              sdata[1].timestamp,
+                              sdata[1].data_id,
+                              sdata[1].supply_vcc,
+                              sdata[1].temperature,
+                              sdata[1].humidity,
+                              sdata[1].pressure,
+                              sdata[1].altitude,
+                              sdata[1].accelerometer_x,
+                              sdata[1].accelerometer_y,
+                              sdata[1].accelerometer_z,
+                              sdata[1].gyroscope_x,
+                              sdata[1].gyroscope_y,
+                              sdata[1].gyroscope_z
+                              );
+              }
+              sensor_data_file.close();
+              sensor_data_file = SPIFFS.open(SENSOR_DATA_FILE, "a+");
               break;
             case IOTESLA_CMD_DELETE:
-              Serial.printf("IOTESLA_CMD_DELETE\n");
+              Serial.printf("Deleting in 10 .. "); delay(2000);
+              Serial.printf("8 .. ");              delay(2000);
+              Serial.printf("6 .. ");              delay(2000);
+              Serial.printf("4 .. ");              delay(2000);
+              Serial.printf("2 ..\n");             delay(2000);
+              Serial.printf("Deleting file ...\n");
+              SPIFFS.remove(SENSOR_DATA_FILE);
+              Serial.printf("Deleted! Bye bye data!\n");
               break;
             case IOTESLA_CMD_STATUS:
               Serial.printf("%2.2f [V] "
@@ -330,12 +375,6 @@ int IoTeslaClient::read_console(void)
                       IOTESLA_COMMAND_SIZE - 1);
         last_command_size = 0;
       }
-    }
-
-    /* Clean input buffer */
-    while (Serial.available() > 0)
-    {
-      Serial.read();
     }
   }
 
